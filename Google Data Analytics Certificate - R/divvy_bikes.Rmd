@@ -1,0 +1,359 @@
+---
+title: "Divvy Bikes"
+author: "Taras The Analyst"
+date: "2023-02-21"
+output: pdf_document
+---
+
+# Divvy Bikes - Capstone Project v2
+## Google Data Analytics Certificate Course @Coursera
+
+The initial dataset is located [here](https://www.kaggle.com/datasets/taraskhamardiuk/divvy-rides-2022-simplified). The capstone project required to get data for 2022 - 12 monthly archive files from a data bucket at AWS. The initial files were downloaded, examined, cleaned and transformed for the project, and stored as a separate dataset in Kaggle.
+
+## STEP 0 PREPARE THE PLAYGROUND
+Install required packages: tidyverse, ggplot2, lubridate.
+```{r libraries, echo=FALSE}
+#Install required packages
+
+# * tidyverse for data import and wrangling
+# * lubridate for date functions
+# * ggplot for visualization
+
+library(tidyverse)  #helps wrangle data
+library(lubridate)  #helps wrangle date attributes
+library(ggplot2)  #helps visualize data
+```
+
+## STEP 1: UPLOAD DATA
+### Upload Divvy datasets (csv files)
+
+```{r, echo=FALSE}
+getwd()
+setwd("C:/Users/taras.khamardiuk/Documents/Divvy Project/2022/2022 CSV Mod")
+rides_2022_01 <- read_csv("202201-tripdata.csv")
+rides_2022_02 <- read_csv("202202-tripdata.csv", show_col_types = FALSE)
+rides_2022_03 <- read_csv("202203-tripdata.csv", show_col_types = FALSE)
+rides_2022_04 <- read_csv("202204-tripdata.csv", show_col_types = FALSE)
+rides_2022_05 <- read_csv("202205-tripdata.csv", show_col_types = FALSE)
+rides_2022_06 <- read_csv("202206-tripdata.csv", show_col_types = FALSE)
+rides_2022_07 <- read_csv("202207-tripdata.csv", show_col_types = FALSE)
+rides_2022_08 <- read_csv("202208-tripdata.csv", show_col_types = FALSE)
+rides_2022_09 <- read_csv("202209-tripdata.csv", show_col_types = FALSE)
+rides_2022_10 <- read_csv("202210-tripdata.csv", show_col_types = FALSE)
+rides_2022_11 <- read_csv("202211-tripdata.csv", show_col_types = FALSE)
+rides_2022_12 <- read_csv("202212-tripdata.csv", show_col_types = FALSE)
+
+# 'show_col_types = FALSE' is used so to hide the message alike below 
+# for each of the files downloaded into notebook
+```
+## STEP 2: WRANGLE DATA AND COMBINE INTO A SINGLE FILE
+Table names need to be checked before merging into one file.
+While the names don't have to be in the same order, they DO need to match perfectly 
+before joining them into one file.
+```{r}
+colnames(rides_2022_01)
+colnames(rides_2022_02)
+colnames(rides_2022_03)
+colnames(rides_2022_04)
+colnames(rides_2022_05)
+colnames(rides_2022_06)
+colnames(rides_2022_07)
+colnames(rides_2022_08)
+colnames(rides_2022_09)
+colnames(rides_2022_10)
+colnames(rides_2022_11)
+colnames(rides_2022_12)
+```
+Renaming the columns in a bit more user-friendly manner...
+```{r}
+(rides_2022_01 <- rename(rides_2022_01
+                         ,bike_type = rideable_type
+                         ,user_type = member_casual))
+(rides_2022_02 <- rename(rides_2022_02
+                         ,bike_type = rideable_type
+                         ,user_type = member_casual))
+(rides_2022_03 <- rename(rides_2022_03
+                         ,bike_type = rideable_type
+                         ,user_type = member_casual))
+(rides_2022_04 <- rename(rides_2022_04
+                         ,bike_type = rideable_type
+                         ,user_type = member_casual))
+(rides_2022_05 <- rename(rides_2022_05
+                         ,bike_type = rideable_type
+                         ,user_type = member_casual))
+(rides_2022_06 <- rename(rides_2022_06
+                         ,bike_type = rideable_type
+                         ,user_type = member_casual))
+(rides_2022_07 <- rename(rides_2022_07
+                         ,bike_type = rideable_type
+                         ,user_type = member_casual))
+(rides_2022_08 <- rename(rides_2022_08
+                         ,bike_type = rideable_type
+                         ,user_type = member_casual))
+(rides_2022_09 <- rename(rides_2022_09
+                         ,bike_type = rideable_type
+                         ,user_type = member_casual))
+(rides_2022_10 <- rename(rides_2022_10
+                         ,bike_type = rideable_type
+                         ,user_type = member_casual))
+(rides_2022_11 <- rename(rides_2022_11
+                         ,bike_type = rideable_type
+                         ,user_type = member_casual))
+(rides_2022_12 <- rename(rides_2022_12
+                         ,bike_type = rideable_type
+                         ,user_type = member_casual))
+```
+Some inspection of names made is made.
+```{r}
+# inspect the renamed columns
+str(rides_2022_01)
+str(rides_2022_02)
+str(rides_2022_08)
+```
+Then, the files are merged into a united dataset.
+```{r}
+# Stack individual quarter's data frames into one big data frame
+all_rides <- bind_rows(rides_2022_01,rides_2022_02, rides_2022_03,rides_2022_04,
+                       rides_2022_05,rides_2022_06,rides_2022_07,rides_2022_08,
+                       rides_2022_09,rides_2022_10,rides_2022_11,rides_2022_12)
+```
+And the whole picture of a merged table is like this. 
+```{r}
+# get the whole picture on a merged table
+str(all_rides)
+```
+The tables needs a small shape-up for further manipulations.
+```{r}
+# now let's reshape a bit the table existing
+# creating ordered day names and factor attributes for weekday parameter
+all_rides$day <- ifelse(all_rides$weekday == 1, "Monday",
+              ifelse(all_rides$weekday == 2, "Tuesday",
+              ifelse(all_rides$weekday == 3, "Wednesday",
+              ifelse(all_rides$weekday == 4, "Thursday", 
+              ifelse(all_rides$weekday == 5, "Friday",
+              ifelse(all_rides$weekday == 6, "Saturday", 
+              ifelse(all_rides$weekday == 7, "Sunday", "N/A")))))))
+all_rides$day <- factor(all_rides$day)
+all_rides$day <- ordered(all_rides$day, c("Monday", "Tuesday", "Wednesday", "Thursday", 
+                                  "Friday", "Saturday", "Sunday"))
+str(all_rides)
+```
+```{r}
+# creating ordered month names and factor attributes for month parameter
+all_rides$month_name <- ifelse(all_rides$month == 1, "January",
+                  ifelse(all_rides$month == 2, "February",
+                  ifelse(all_rides$month == 3, "March",
+                  ifelse(all_rides$month == 4, "April", 
+                  ifelse(all_rides$month == 5, "May",
+                  ifelse(all_rides$month == 6, "June", 
+                  ifelse(all_rides$month == 7, "July",
+                  ifelse(all_rides$month == 8, "August",
+                  ifelse(all_rides$month == 9, "September",
+                  ifelse(all_rides$month == 10, "October",
+                  ifelse(all_rides$month == 11, "November",
+                  ifelse(all_rides$month == 12, "December", "N/A"))))))))))))
+all_rides$month_name <- factor(all_rides$month_name)
+all_rides$month_name <- ordered(all_rides$month_name, c("January", "February", "March", "April", 
+                                      "May", "June", "July", "August", 
+                                      "September", "October", "November", "December"))
+#all_rides$month
+
+str(all_rides)
+```
+```{r}
+# let's make some changes in table structure getting some factors
+all_rides$bike_type <- factor(all_rides$bike_type)
+str(all_rides$bike_type)
+head(all_rides$bike_type)
+
+all_rides$user_type <- factor(all_rides$user_type)
+str(all_rides$user_type)
+head(all_rides$user_type)
+```
+## STEP 3: CONDUCT DESCRIPTIVE ANALYSIS
+### 3.1 Basic descriptive analytics
+Now, let's proceed with some basic calculations.
+```{r}
+# Descriptive analysis on weekday (all figures in days)
+
+mean(all_rides$weekday) #straight average (exemplar calculations)
+median(all_rides$weekday) #straight median (exemplar calculations)
+max(all_rides$weekday) #straight max (exemplar calculations)
+min(all_rides$weekday) #straight min (exemplar calculations)
+
+# this is just a matter of example, so to get the basics on how things work
+```
+```{r}
+# Condensed four lines above to one line using summary() on the weekday attribute
+summary(all_rides$weekday) #straight summary (exemplar calculations)
+```
+```{r}
+# Compare members and casual users (user_type attribute) - exemplar calculations
+aggregate(all_rides$weekday ~ all_rides$user_type, FUN = mean)
+aggregate(all_rides$weekday ~ all_rides$user_type, FUN = median)
+aggregate(all_rides$weekday ~ all_rides$user_type, FUN = max)
+aggregate(all_rides$weekday ~ all_rides$user_type, FUN = min)
+
+# See the average weekday time by each month for members vs casual users
+aggregate(all_rides$weekday ~ all_rides$user_type + all_rides$month, FUN = mean)
+
+# this is just a matter of example, so to get the basics on how things work
+```
+### 3.2 Basic tabular analytics
+Table counts of total bike type records and bike users
+```{r}
+# table counts of total bike type records and bike users
+
+table(all_rides$user_type)
+table(all_rides$bike_type)
+```
+Categorical table calculations of bike types by users and visa versa
+```{r}
+# categorical table calculations of bike types by users and visa versa
+
+table(all_rides$user_type, all_rides$bike_type)
+table(all_rides$bike_type, all_rides$user_type)
+```
+Bike type preferences by day of week
+```{r}
+# tabular exploratory analysis
+# bike type preferences by day of week
+table(all_rides$bike_type, all_rides$day)
+```
+User type preferences by day of week
+```{r}
+# user type preferences by day of week
+table(all_rides$user_type, all_rides$day)
+```
+Bike type preferences vs users by the day of week
+```{r}
+# bike type preferences vs users by the day of week
+
+table(all_rides$bike_type, all_rides$user_type, all_rides$day)
+```
+User's bike type preferences by the day of week
+```{r}
+# user's bike type preferences by the day of week
+
+table(all_rides$user_type, all_rides$bike_type, all_rides$day)
+```
+And here are some trip duration calculations in raw format.
+```{r}
+# exploratory calculations on trip duration by user type
+
+tapply(all_rides$trip_length_raw, all_rides$user_type, sum)
+```
+```{r}
+# exploratory calculations on trip duration by bike type
+
+tapply(all_rides$trip_length_raw, all_rides$bike_type, sum)
+
+```
+
+```{r}
+# exploratory calculations on trip duration: user vs bike type
+
+tapply(all_rides$trip_length_raw, list(all_rides$user_type, all_rides$bike_type), sum)
+
+```
+Now, let's add some context to the general calculations...
+```{r}
+# adding some context to the general calculations
+addmargins(table(all_rides$user_type, all_rides$bike_type))
+addmargins(table(all_rides$bike_type, all_rides$user_type))
+```
+
+```{r}
+# adding some context to the general calculations
+
+addmargins(table(all_rides$user_type, all_rides$bike_type))
+addmargins(table(all_rides$bike_type, all_rides$user_type))
+```
+
+```{r}
+# adding some proportions to the general calculation
+
+prop.table(table(all_rides$user_type, all_rides$bike_type))
+prop.table(table(all_rides$bike_type, all_rides$user_type))
+```
+And let's see the proportions of different factors within our calculations
+```{r}
+# adding more clarity into proportions of calculations
+addmargins(prop.table(table(all_rides$bike_type, all_rides$user_type)))
+addmargins(prop.table(table(all_rides$user_type, all_rides$bike_type)))
+```
+## 3.3 Basic Visualizations of table calculations
+Wrapping it all with some visual presentation of results of calculations.
+```{r}
+# quantity of bike users
+td <- table(all_rides$user_type)
+my_data <- as.data.frame(td)                  # Convert table to data.frame
+my_data                                           # Print data frame
+ggplot(my_data,                                   # Draw bar chart of table
+       aes(x = Var1,
+           y = Freq, fill = Var1)) + 
+  geom_bar(stat = "identity")
+```
+
+```{r}
+# quantity of bike types
+tdd <- table(all_rides$bike_type)
+my_data <- as.data.frame(tdd)                  # Convert table to data.frame
+my_data                                           # Print data frame
+ggplot(my_data,                                   # Draw bar chart of table
+       aes(x = Var1,
+           y = Freq, fill = Var1)) + 
+  geom_bar(stat = "identity")
+```
+
+```{r}
+# daily spread of rides
+table(all_rides$day, all_rides$user_type)
+
+tdd <- table(all_rides$day, all_rides$user_type)
+my_data <- as.data.frame(tdd)                  # Convert table to data.frame
+my_data                                           # Print data frame
+ggplot(my_data,                                   # Draw bar chart of table
+       aes(x = Var1,
+           y = Freq, fill = Var1)) + 
+  geom_bar(stat = "identity")
+```
+```{r}
+ggplot(my_data,                                   # Draw barchart of table
+       aes(x = Var1,
+           y = Freq, fill = Var2)) + 
+  geom_bar(stat = "identity")
+```
+
+
+
+```{r}
+# draw a comparison of daily usage proportions
+
+ggplot(my_data, aes(Var1, Freq, group = Var2, colour = Var2)) + 
+  geom_point() + 
+  geom_line()
+```
+
+## STEP 4: EXPORT SUMMARY FILE FOR FURTHER ANALYSIS
+
+```{r}
+# Create a csv file that could be further visualized in Excel, Tableau, or other
+# presentation software of choice.
+# N.B.: This file location is for a  PC, change the file location accordingly:)
+
+# write.csv(all_rides,
+#          "C:/Users/YOUR-USER-NAME/Downloads/Divvy Project/all_rides.csv",
+#           row.names=TRUE)
+
+# Excavation is done! Congratulations!:)
+
+# P.S.: I've got all_rides.csv of 300+ MB:)
+```
+
+## Summary¶
+
+First, I did my analysis in different way (Excel, BigQuery, Looker), but later on decided to try R. And this workbook describes the second path. Some examples are not that comprehensive, but this is my first experience with R - so don't judge too strong.
+
+I had here also an attempt of visualizing things, but some un-copable message was thrown, so I skipped trying for now. But I will in the future, I believe...)
+
